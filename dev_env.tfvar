@@ -1,0 +1,5 @@
+env_name                = "dev"
+resource_group_location = "northeurope"
+b2c_candidates_domain   = "marchermarholtcandidates"
+b2c_companies_domain    = "marchermarholtcompanies"
+custom_domain           = "mmtest1.com"

@@ -1,0 +1,81 @@
+name: 'DeployTF'
+
+on:
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: Environment
+        required: true
+        default: 'dev' 
+        options:
+        - sand
+        - dev
+        - test
+        - prod
+  
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    env:
+      ARM_ACCESS_KEY: ${{ secrets[format('AZURE_ACCESS_KEY_{0}', github.event.inputs.environment || 'dev' )] }} # Storage account key
+      ARM_CLIENT_ID: ${{ secrets[format('AZURE_CLIENT_ID_{0}', github.event.inputs.environment || 'dev' )] }}
+      ARM_CLIENT_SECRET: ${{ secrets[format('AZURE_CLIENT_SECRET_{0}', github.event.inputs.environment || 'dev' )] }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets[format('AZURE_SUBSCRIPTION_ID_{0}', github.event.inputs.environment || 'dev' )] }}
+      ARM_TENANT_ID: ${{ secrets[format('AZURE_TENANT_ID_{0}', github.event.inputs.environment || 'dev' )] }}
+      TF_VAR_secret_sendinblue: ${{ secrets[format('EMAIL_SENDINBLUE_KEY_{0}', github.event.inputs.environment || 'dev' )] }}
+      TF_VAR_secret_heresearch: ${{ secrets[format('HERE_SEARCH_API_KEY_{0}', github.event.inputs.environment || 'dev' )] }}
+      TF_VAR_secret_talogy: ${{ secrets[format('TALOGY_API_CLIENT_SECRET_{0}', github.event.inputs.environment || 'dev' )] }}
+      TF_VAR_secret_candidate: ${{ secrets[format('AZURE_B2C_CANDIDATE_APP_REGISTRATION_SECRET_{0}', github.event.inputs.environment || 'dev' )] }}
+      TF_VAR_secret_company: ${{ secrets[format('AZURE_B2C_COMPANY_APP_REGISTRATION_SECRET_{0}', github.event.inputs.environment || 'dev' )] }}
+      TF_VAR_secret_danishcrv: ${{ secrets[format('DANISH_CRV_API_USER_PASSWORD_{0}', github.event.inputs.environment || 'dev' )] }}
+      TF_VAR_secret_formrecognizerkey: ${{ secrets.FORM_RECOGNIZER_KEY }} 
+      TF_VAR_secret_weawy: ${{ secrets[format('WEAWY_API_SECRET_{0}', github.event.inputs.environment || 'dev' )] }}
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Set environment
+      run: |
+        if [ -z ${{ github.event.inputs.environment }}]
+        then
+          echo "inputs_environment=dev" >> $GITHUB_ENV
+        else
+          echo "inputs_environment=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+        fi
+
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: '1.2.6'
+
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init 
+      run: terraform init -backend-config=./backend/config.general_${{ env.inputs_environment }}.tfbackend
+
+    # validate Terraform
+    - name: Terraform Validate
+      run: terraform validate 
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: terraform plan -var-file=${{ env.inputs_environment }}_env.tfvar
+
+      # On push to master, build or change infrastructure according to Terraform configuration files
+      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+    - name: Terraform Apply ${{ env.inputs_environment }}
+      if: ( github.ref == 'refs/heads/master' && github.event_name != 'pull_request' ) || ( github.event.inputs.environment == 'sand' )
+      run: terraform apply -var-file=${{ env.inputs_environment }}_env.tfvar -auto-approve

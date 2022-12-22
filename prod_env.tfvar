@@ -1,0 +1,5 @@
+env_name                = "prod"
+env_state               = "prod"
+b2c_candidates_domain   = "mmselfservicecandidatesprod"
+b2c_companies_domain    = "mmselfservicecompaniesprod"
+custom_domain           = "marchermarkholt.com"

@@ -1,0 +1,4 @@
+resource_group_name  = "rg-mm-tfstate-prod"
+storage_account_name = "stmmtfstateprod"
+container_name       = "stcmmtfstateprod"
+key                  = "general_prod.tfstate"

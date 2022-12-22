@@ -1,0 +1,4 @@
+.terraform*
+*.tfstate
+local.tfvars
+/.vs

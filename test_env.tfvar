@@ -1,0 +1,5 @@
+env_name                = "test"
+resource_group_location = "westeurope"
+b2c_candidates_domain   = "mmselfservicecandidatestest"
+b2c_companies_domain    = "mmselfservicecompaniestest"
+custom_domain           = "mmtest2.com"

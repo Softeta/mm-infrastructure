@@ -1,0 +1,4 @@
+resource_group_name  = "rg-mm-tfstate-nonprod"
+storage_account_name = "stmmtfstatenonprod"
+container_name       = "stcmmtfstatenonprod"
+key                  = "general_sand.tfstate"
